@@ -6,11 +6,8 @@
 
 enabled_site_setting :raffle_enabled
 
-# === 注册所有前端资源 ===
-register_asset "javascripts/discourse/initializers/add-raffle-composer-button.js.es6"
-register_asset "javascripts/discourse/components/raffle-editor.js"
-register_asset "javascripts/discourse/components/raffle-info-card.js"
-register_asset "stylesheets/common/raffle.scss"
+# 在新版 Discourse 中，assets 目录下的 JS 和 SCSS 文件会被自动加载
+# 无需手动调用 register_asset
 
 after_initialize do
   # 依赖 Discourse 的 autoloading 机制加载 app 和 lib 目录下的文件
@@ -73,10 +70,12 @@ after_initialize do
 
   require_dependency "topic_view_serializer"
   add_to_serializer(:topic_view, :lottery_activity, false) do
-    LotteryActivitySerializer.new(object.topic.lottery_activity, root: false).as_json
+    # 确保 object.topic 存在
+    object.topic&.lottery_activity ? LotteryActivitySerializer.new(object.topic.lottery_activity, root: false).as_json : nil
   end
 
   add_to_serializer(:topic_view, :include_lottery_activity?) do
-    object.topic.lottery_activity.present?
+    # 确保 object.topic 存在
+    object.topic&.lottery_activity.present?
   end
 end
