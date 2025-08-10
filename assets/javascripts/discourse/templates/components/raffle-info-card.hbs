@@ -1,0 +1,55 @@
+<div class="raffle-info-card {{if this.isFinished 'is-finished'}}">
+  <div class="raffle-card-header">
+    <div class="raffle-card-title">
+      {{d-icon "trophy"}}
+      {{#if this.isFinished}}
+        {{i18n "raffle.card.title_finished"}}
+      {{else}}
+        {{i18n "raffle.card.title_active"}}
+      {{/if}}
+    </div>
+    <div class="raffle-card-condition">
+      {{this.conditionText}}
+    </div>
+  </div>
+
+  <div class="raffle-card-body">
+    {{#if this.isFinished}}
+      <div class="raffle-winners-list">
+        <h4>{{i18n "raffle.card.winners_title"}}</h4>
+        <ul>
+          {{#each this.activity.winners as |winner|}}
+            <li>
+              <span class="raffle-prize-name">{{winner.prize.name}}:</span>
+              <a href="/u/{{winner.user.username}}" class="user-link">
+                <img src={{winner.user.avatar_template}} class="avatar" width="20" height="20">
+                {{winner.user.username}}
+              </a>
+              <a href="/p/{{winner.post_id}}" class="raffle-winner-post-link" title={{i18n "raffle.card.view_winning_post"}}>
+                (#{{winner.post.post_number}})
+              </a>
+            </li>
+          {{else}}
+            <p>{{i18n "raffle.card.no_winners"}}</p>
+          {{/each}}
+        </ul>
+      </div>
+    {{else}}
+      <div class="raffle-prizes-list">
+        <h4>{{i18n "raffle.card.prizes_title"}}</h4>
+        <ul>
+          {{#each this.activity.prizes as |prize|}}
+            <li><strong>{{prize.quantity}}x</strong> {{prize.name}}</li>
+          {{/each}}
+        </ul>
+      </div>
+      <div class="raffle-rules-list">
+        <h4>{{i18n "raffle.card.rules_title"}}</h4>
+        <p>{{i18n "raffle.card.draw_method"}}: {{this.drawTypeText}}</p>
+        {{#if this.activity.participation_rules.keyword}}
+          <p>{{i18n "raffle.card.keyword_rule"}}: <code>{{this.activity.participation_rules.keyword}}</code></p>
+        {{/if}}
+      </div>
+    {{/if}}
+  </div>
+</div>
