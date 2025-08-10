@@ -1,0 +1,32 @@
+en:
+  js:
+    raffle:
+      composer_button_title: "Set up Raffle"
+      modal:
+        title: "Raffle Settings"
+        draw_type: "Draw Method"
+        types:
+          by_time: "At a specific time"
+          by_floor: "At a specific post number"
+        end_time: "Draw Time"
+        floor_target: "Target Post Number"
+        rules_title: "Participation Rules"
+        rules:
+          unique_user: "Each user can only win once"
+          min_level: "Minimum trust level:"
+          keyword: "Reply must contain keyword (optional):"
+        prizes_title: "Prizes"
+        add_prize: "Add Prize"
+        save: "Save Raffle"
+      card:
+        title_active: "Raffle in Progress"
+        title_finished: "Raffle Finished"
+        ends_at: "Ends: {date}"
+        ends_at_floor: "Ends at post #{floor}"
+        winners_title: "🎉 Winners List"
+        prizes_title: "Prizes"
+        rules_title: "Rules"
+        draw_method: "Method"
+        keyword_rule: "Keyword"
+        no_winners: "Unfortunately, there were no winners in this raffle."
+        view_winning_post: "View winning post"
