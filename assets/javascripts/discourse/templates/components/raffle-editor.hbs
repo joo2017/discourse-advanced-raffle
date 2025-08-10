@@ -1,0 +1,60 @@
+<ModalBody @title="raffle.modal.title" @closeModal={{@closeModal}}>
+  <form>
+    <div class="control-group">
+      <label class="control-label">{{i18n "raffle.modal.draw_type"}}</label>
+      <div class="controls">
+        <label><Input @type="radio" @name="drawType" @value="by_time" @checked={{eq this.drawType "by_time"}} /> {{i18n "raffle.modal.types.by_time"}}</label>
+        <label><Input @type="radio" @name="drawType" @value="by_floor" @checked={{eq this.drawType "by_floor"}} /> {{i18n "raffle.modal.types.by_floor"}}</label>
+      </div>
+    </div>
+
+    {{#if (eq this.drawType "by_time")}}
+      <div class="control-group">
+        <label class="control-label">{{i18n "raffle.modal.end_time"}}</label>
+        <div class="controls">
+          <DDateInput @date={{this.endTime}} />
+        </div>
+      </div>
+    {{/if}}
+    {{#if (eq this.drawType "by_floor")}}
+      <div class="control-group">
+        <label class="control-label">{{i18n "raffle.modal.floor_target"}}</label>
+        <div class="controls">
+          <Input @type="number" @value={{this.drawConditionFloor}} />
+        </div>
+      </div>
+    {{/if}}
+
+    <hr>
+
+    <div class="control-group">
+      <label class="control-label">{{i18n "raffle.modal.rules_title"}}</label>
+      <div class="controls">
+        <label><Input @type="checkbox" @checked={{this.rulesUniqueUser}} /> {{i18n "raffle.modal.rules.unique_user"}}</label>
+      </div>
+      <div class="controls">
+        {{i18n "raffle.modal.rules.min_level"}} <TrustLevelSelect @value={{this.rulesMinLevel}} />
+      </div>
+      <div class="controls">
+        {{i18n "raffle.modal.rules.keyword"}} <Input @type="text" @value={{this.rulesKeyword}} />
+      </div>
+    </div>
+    
+    <hr>
+
+    <div class="control-group">
+      <label class="control-label">{{i18n "raffle.modal.prizes_title"}}</label>
+      {{#each this.prizes as |prize|}}
+        <div class="raffle-prize-row">
+          <Input @placeholder="奖品名称" @value={{prize.name}} />
+          <Input @type="number" @placeholder="数量" @value={{prize.quantity}} class="prize-quantity" />
+          <DButton @action={{fn this.removePrize prize}} @icon="trash-alt" class="btn-danger" />
+        </div>
+      {{/each}}
+      <DButton @action={{this.addPrize}} @icon="plus" @label="raffle.modal.add_prize" class="btn-primary" />
+    </div>
+  </form>
+</ModalBody>
+
+<ModalFooter @ok={{this.saveRaffle}} @okLabel="raffle.modal.save" @okDisabled={{this.isLoading}}
+             @cancel={{@closeModal}} />
