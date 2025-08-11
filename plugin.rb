@@ -9,6 +9,9 @@ enabled_site_setting :raffle_enabled
 
 after_initialize do
   
+  # Discourse 会自动加载 app/, lib/, config/ 下的文件。
+  # 我们不需要手动 `require` 它们。
+
   # 1. 扩展核心模型
   Topic.class_eval do
     has_one :lottery_activity, class_name: "LotteryActivity", dependent: :destroy
@@ -16,7 +19,6 @@ after_initialize do
 
   # 2. 定义控制器和路由
   module ::DiscourseAdvancedRaffle
-    # ... Controller 和 Engine 的代码保持不变 ...
     class RafflesController < ::ApplicationController
       requires_plugin 'discourse-advanced-raffle'
       before_action :ensure_logged_in
@@ -32,12 +34,8 @@ after_initialize do
         activity.user_id = current_user.id
 
         activity_params = params.require(:activity).permit(
-          :status,
-          :draw_type,
-          :start_time,
-          :end_time,
-          draw_condition: {},
-          participation_rules: {}
+          :status, :draw_type, :start_time, :end_time,
+          draw_condition: {}, participation_rules: {}
         )
         
         prizes_params = params.require(:activity).permit(prizes: [:id, :name, :description, :quantity, :image_url])[:prizes] || []
@@ -70,23 +68,18 @@ after_initialize do
     mount DiscourseAdvancedRaffle::Engine, at: '/raffles'
   end
 
-  # 3. 扩展序列化器 (修正作用域问题)
+  # 3. 扩展序列化器
+  # `require_dependency "topic_view_serializer"` 是必要的，因为它修改的是 Discourse 核心类
   require_dependency "topic_view_serializer"
   
-  # === 这是本次修改的核心 ===
-  # 我们需要在 TopicViewSerializer 类的上下文中定义这个方法
   TopicViewSerializer.class_eval do
-    # 将辅助方法定义在 class_eval 块内部
-    # 这样它就成为了 TopicViewSerializer 的一个实例方法
     def lottery_activity_for
-      # 在实例方法中，`object` 就是 topic_view 对象
       object.topic&.lottery_activity
     end
   end
 
-  # 现在，下面的代码块在执行时，就可以找到这个方法了
   add_to_serializer(:topic_view, :lottery_activity, false) do
-    activity = lottery_activity_for # 注意：这里直接调用，不需要传递参数
+    activity = lottery_activity_for
     activity ? LotteryActivitySerializer.new(activity, root: false).as_json : nil
   end
 
@@ -94,12 +87,12 @@ after_initialize do
     SiteSetting.raffle_enabled? && lottery_activity_for.present?
   end
 
-  # 4. 定时任务部分保持不变
-  require_dependency 'jobs/scheduled/raffle_auto_draw'
-  Jobs::RaffleAutoDraw.class_eval do
-    def execute(args)
-      return unless SiteSetting.raffle_enabled?
-      find_and_draw_raffles
-    end
-  end
+  # 4. 定时任务的修改将在这里进行
+  # 我们不再需要 `require_dependency` 来加载我们自己的文件
+  # Discourse 的自动加载器会处理它。
+  # 只有在 after_initialize 阶段，我们才能安全地对已加载的类进行 class_eval
+  
+  # 这里不需要任何代码来修改定时任务，因为它原始的定义已经是正确的了。
+  # 我们之前添加的 class_eval 是为了移除 SiteSetting 检查，现在我们希望保留这个检查，
+  # 所以我们不需要修改原始的 Jobs::RaffleAutoDraw 类。
 end
