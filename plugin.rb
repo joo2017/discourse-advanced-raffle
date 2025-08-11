@@ -4,11 +4,8 @@
 # authors: Your Name / Company
 # url: https://github.com/your-repo/discourse-advanced-raffle
 
-# 将 enabled_site_setting 移入 after_initialize 块
-# 这确保了在注册设置时，Discourse 的设置系统已经准备就绪
-
 after_initialize do
-  # 将所有插件相关的代码都放在这里
+  # 将所有插件相关的代码都放在这里，确保 Discourse 核心已加载
   
   # 1. 注册站点设置
   enabled_site_setting :raffle_enabled
@@ -25,7 +22,6 @@ after_initialize do
       before_action :ensure_logged_in
 
       def update
-        # 确保插件已启用
         raise Discourse::InvalidAccess.new unless SiteSetting.raffle_enabled?
 
         topic = Topic.find_by(id: params[:topic_id])
@@ -74,14 +70,20 @@ after_initialize do
     mount DiscourseAdvancedRaffle::Engine, at: '/raffles'
   end
 
-  # 4. 扩展序列化器
+  # 4. 扩展序列化器 (使用最新的 API 规范)
   require_dependency "topic_view_serializer"
-  add_to_serializer(:topic_view, :lottery_activity, false) do
+
+  # 这是本次修改的核心
+  add_to_serializer(:topic_view, :lottery_activity, respect_plugin_enabled: false) do
+    # 使用关键字参数 `respect_plugin_enabled: false` 替代旧的第三个参数
+    # 如果 lottery_activity 存在，则序列化它
     object.topic&.lottery_activity ? LotteryActivitySerializer.new(object.topic.lottery_activity, root: false).as_json : nil
   end
 
-  add_to_serializer(:topic_view, :include_lottery_activity?) do
-    # 只有当插件启用且活动存在时，才进行序列化
+  # 使用 include_condition 替代 include_*? 方法
+  # 这是本次修改的另一个核心
+  TopicViewSerializer.add_include_condition(:lottery_activity) do
+    # 只有当插件启用且活动存在时，才包含此字段
     SiteSetting.raffle_enabled? && object.topic&.lottery_activity.present?
   end
 end
