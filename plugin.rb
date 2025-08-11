@@ -70,12 +70,12 @@ after_initialize do
 
   require_dependency "topic_view_serializer"
   add_to_serializer(:topic_view, :lottery_activity, false) do
-    # 确保 object.topic 存在
+    # 使用安全导航操作符，即使 object.topic 为 nil 也不会报错
     object.topic&.lottery_activity ? LotteryActivitySerializer.new(object.topic.lottery_activity, root: false).as_json : nil
   end
 
   add_to_serializer(:topic_view, :include_lottery_activity?) do
-    # 确保 object.topic 存在
+    # 使用安全导航操作符
     object.topic&.lottery_activity.present?
   end
 end
