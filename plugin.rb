@@ -70,20 +70,26 @@ after_initialize do
     mount DiscourseAdvancedRaffle::Engine, at: '/raffles'
   end
 
-  # 4. 扩展序列化器 (使用最新的 API 规范)
-  require_dependency "topic_view_serializer"
-
+  # 4. 扩展序列化器 (使用最稳定、兼容性最强的 API 写法)
   # 这是本次修改的核心
-  add_to_serializer(:topic_view, :lottery_activity, respect_plugin_enabled: false) do
-    # 使用关键字参数 `respect_plugin_enabled: false` 替代旧的第三个参数
-    # 如果 lottery_activity 存在，则序列化它
-    object.topic&.lottery_activity ? LotteryActivitySerializer.new(object.topic.lottery_activity, root: false).as_json : nil
+  require_dependency "topic_view_serializer"
+  
+  # 定义一个方法来获取抽奖活动数据
+  def lottery_activity_for(topic_view)
+    topic_view.topic&.lottery_activity
   end
 
-  # 使用 include_condition 替代 include_*? 方法
-  # 这是本次修改的另一个核心
-  TopicViewSerializer.add_include_condition(:lottery_activity) do
-    # 只有当插件启用且活动存在时，才包含此字段
-    SiteSetting.raffle_enabled? && object.topic&.lottery_activity.present?
+  # 将这个方法作为属性添加到 TopicViewSerializer
+  add_to_serializer(:topic_view, :lottery_activity, false) do
+    # 调用我们上面定义的方法
+    activity = lottery_activity_for(object)
+    # 如果活动存在，则序列化它
+    activity ? LotteryActivitySerializer.new(activity, root: false).as_json : nil
+  end
+
+  # 定义一个方法来决定是否包含 lottery_activity 字段
+  add_to_serializer(:topic_view, :include_lottery_activity?) do
+    # 只有当插件启用且活动存在时，才返回 true
+    SiteSetting.raffle_enabled? && lottery_activity_for(object).present?
   end
 end
