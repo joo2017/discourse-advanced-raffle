@@ -9,8 +9,22 @@ enabled_site_setting :raffle_enabled
 
 after_initialize do
   
-  # Discourse 会自动加载 app/, lib/, config/ 下的文件。
-  # 我们不需要手动 `require` 它们。
+  # === 这是本次修改的核心 ===
+  # 强制 Rails 立即加载我们插件的所有 Ruby 文件
+  # 确保在后续代码执行时，所有类（如 LotteryActivity）都已定义
+  plugin_root = File.expand_path("..", __FILE__)
+  [
+    "#{plugin_root}/app/models",
+    "#{plugin_root}/app/serializers",
+    "#{plugin_root}/app/controllers",
+    "#{plugin_root}/app/services",
+    "#{plugin_root}/lib/jobs"
+  ].each do |path|
+    # 将目录添加到 Rails 的预加载路径中
+    Rails.configuration.eager_load_paths << path
+  end
+  # 触发一次预加载
+  Zeitwerk::Loader.eager_load_all
 
   # 1. 扩展核心模型
   Topic.class_eval do
@@ -25,7 +39,7 @@ after_initialize do
 
       def update
         raise Discourse::InvalidAccess.new unless SiteSetting.raffle_enabled?
-
+        # ... Controller 代码保持不变 ...
         topic = Topic.find_by(id: params[:topic_id])
         return render_json_error(I18n.t('topic.not_found'), status: 404) unless topic
         guardian.ensure_can_edit!(topic)
@@ -69,7 +83,6 @@ after_initialize do
   end
 
   # 3. 扩展序列化器
-  # `require_dependency "topic_view_serializer"` 是必要的，因为它修改的是 Discourse 核心类
   require_dependency "topic_view_serializer"
   
   TopicViewSerializer.class_eval do
@@ -87,12 +100,6 @@ after_initialize do
     SiteSetting.raffle_enabled? && lottery_activity_for.present?
   end
 
-  # 4. 定时任务的修改将在这里进行
-  # 我们不再需要 `require_dependency` 来加载我们自己的文件
-  # Discourse 的自动加载器会处理它。
-  # 只有在 after_initialize 阶段，我们才能安全地对已加载的类进行 class_eval
-  
-  # 这里不需要任何代码来修改定时任务，因为它原始的定义已经是正确的了。
-  # 我们之前添加的 class_eval 是为了移除 SiteSetting 检查，现在我们希望保留这个检查，
-  # 所以我们不需要修改原始的 Jobs::RaffleAutoDraw 类。
+  # 4. 定时任务部分
+  # 由于我们已经预加载了所有文件，这里不需要再做任何事情
 end
