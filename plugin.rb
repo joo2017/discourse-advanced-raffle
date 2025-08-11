@@ -16,12 +16,12 @@ after_initialize do
 
   # 2. 定义控制器和路由
   module ::DiscourseAdvancedRaffle
+    # ... Controller 和 Engine 的代码保持不变 ...
     class RafflesController < ::ApplicationController
       requires_plugin 'discourse-advanced-raffle'
       before_action :ensure_logged_in
 
       def update
-        # 增加对 SiteSetting 的检查
         raise Discourse::InvalidAccess.new unless SiteSetting.raffle_enabled?
 
         topic = Topic.find_by(id: params[:topic_id])
@@ -70,32 +70,34 @@ after_initialize do
     mount DiscourseAdvancedRaffle::Engine, at: '/raffles'
   end
 
-  # 3. 扩展序列化器 (使用最稳定、兼容性最强的 API 写法)
+  # 3. 扩展序列化器 (修正作用域问题)
   require_dependency "topic_view_serializer"
   
-  def lottery_activity_for(topic_view)
-    topic_view.topic&.lottery_activity
+  # === 这是本次修改的核心 ===
+  # 我们需要在 TopicViewSerializer 类的上下文中定义这个方法
+  TopicViewSerializer.class_eval do
+    # 将辅助方法定义在 class_eval 块内部
+    # 这样它就成为了 TopicViewSerializer 的一个实例方法
+    def lottery_activity_for
+      # 在实例方法中，`object` 就是 topic_view 对象
+      object.topic&.lottery_activity
+    end
   end
 
+  # 现在，下面的代码块在执行时，就可以找到这个方法了
   add_to_serializer(:topic_view, :lottery_activity, false) do
-    activity = lottery_activity_for(object)
+    activity = lottery_activity_for # 注意：这里直接调用，不需要传递参数
     activity ? LotteryActivitySerializer.new(activity, root: false).as_json : nil
   end
 
   add_to_serializer(:topic_view, :include_lottery_activity?) do
-    # 恢复对 SiteSetting 的检查
-    SiteSetting.raffle_enabled? && lottery_activity_for(object).present?
+    SiteSetting.raffle_enabled? && lottery_activity_for.present?
   end
 
-  # 4. 修改定时任务，恢复 SiteSetting 检查
-  # 我们需要确保定时任务的文件也被正确加载
-  require_dependency File.expand_path('../lib/jobs/scheduled/raffle_auto_draw.rb', __FILE__)
-  
-  # Discourse 核心会自动加载 lib/jobs/scheduled 下的文件，
-  # 但为了确保 class_eval 时类已加载，显式 require 更安全
+  # 4. 定时任务部分保持不变
+  require_dependency 'jobs/scheduled/raffle_auto_draw'
   Jobs::RaffleAutoDraw.class_eval do
     def execute(args)
-      # 恢复检查
       return unless SiteSetting.raffle_enabled?
       find_and_draw_raffles
     end
