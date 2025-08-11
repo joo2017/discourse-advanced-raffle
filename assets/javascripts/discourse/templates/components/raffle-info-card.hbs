@@ -25,9 +25,14 @@
                 <img src={{winner.user.avatar_template}} class="avatar" width="20" height="20">
                 {{winner.user.username}}
               </a>
-              <a href="/p/{{winner.post_id}}" class="raffle-winner-post-link" title={{i18n "raffle.card.view_winning_post"}}>
-                (#{{winner.post.post_number}})
-              </a>
+              
+              {{#if winner.post}}
+                <a href="/p/{{winner.post_id}}" class="raffle-winner-post-link" title={{i18n "raffle.card.view_winning_post"}}>
+                  (#{{winner.post.post_number}})
+                </a>
+              {{else}}
+                <span class="raffle-post-deleted">({{i18n "raffle.card.post_deleted"}})</span>
+              {{/if}}
             </li>
           {{else}}
             <p>{{i18n "raffle.card.no_winners"}}</p>
