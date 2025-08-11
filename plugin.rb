@@ -4,24 +4,30 @@
 # authors: Your Name / Company
 # url: https://github.com/your-repo/discourse-advanced-raffle
 
-enabled_site_setting :raffle_enabled
-
-# 在新版 Discourse 中，assets 目录下的 JS 和 SCSS 文件会被自动加载
-# 无需手动调用 register_asset
+# 将 enabled_site_setting 移入 after_initialize 块
+# 这确保了在注册设置时，Discourse 的设置系统已经准备就绪
 
 after_initialize do
-  # 依赖 Discourse 的 autoloading 机制加载 app 和 lib 目录下的文件
-
+  # 将所有插件相关的代码都放在这里
+  
+  # 1. 注册站点设置
+  enabled_site_setting :raffle_enabled
+  
+  # 2. 扩展核心模型
   Topic.class_eval do
     has_one :lottery_activity, class_name: "LotteryActivity", dependent: :destroy
   end
 
+  # 3. 定义控制器和路由
   module ::DiscourseAdvancedRaffle
     class RafflesController < ::ApplicationController
       requires_plugin 'discourse-advanced-raffle'
       before_action :ensure_logged_in
 
       def update
+        # 确保插件已启用
+        raise Discourse::InvalidAccess.new unless SiteSetting.raffle_enabled?
+
         topic = Topic.find_by(id: params[:topic_id])
         return render_json_error(I18n.t('topic.not_found'), status: 404) unless topic
         guardian.ensure_can_edit!(topic)
@@ -68,14 +74,14 @@ after_initialize do
     mount DiscourseAdvancedRaffle::Engine, at: '/raffles'
   end
 
+  # 4. 扩展序列化器
   require_dependency "topic_view_serializer"
   add_to_serializer(:topic_view, :lottery_activity, false) do
-    # 使用安全导航操作符，即使 object.topic 为 nil 也不会报错
     object.topic&.lottery_activity ? LotteryActivitySerializer.new(object.topic.lottery_activity, root: false).as_json : nil
   end
 
   add_to_serializer(:topic_view, :include_lottery_activity?) do
-    # 使用安全导航操作符
-    object.topic&.lottery_activity.present?
+    # 只有当插件启用且活动存在时，才进行序列化
+    SiteSetting.raffle_enabled? && object.topic&.lottery_activity.present?
   end
 end
