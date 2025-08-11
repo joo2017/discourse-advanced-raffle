@@ -4,28 +4,31 @@ export default {
   name: "add-raffle-composer-button",
 
   initialize(container) {
-    // 确保插件在后台设置中是启用的
+    // 确保我们只在 Discourse 的主应用中运行
     const siteSettings = container.lookup("site-settings:main");
-    if (!siteSettings.raffle_enabled) {
-      return;
-    }
+    if (!siteSettings) { return; }
 
-    withPluginApi("0.8.7", (api) => {
-      // 在编辑器的齿轮菜单中添加一个按钮
-      api.addComposerToolbarPopupMenuOption({
-        icon: "trophy",
-        label: "raffle.composer_button_title",
+    withPluginApi("1.0.0", (api) => {
+      // 检查插件是否在后台启用
+      if (!siteSettings.raffle_enabled) {
+        return;
+      }
+
+      // 使用 addComposerToolbarButton 直接在工具栏添加一个按钮
+      api.addComposerToolbarButton({
+        id: "setup-raffle-button", // 按钮的唯一 ID
+        group: "insertions",       // 按钮所属的分组
+        icon: "trophy",            // 按钮图标
+        label: "raffle.composer_button_title", // 鼠标悬停时的标题
         
-        // 这是最关键的 action 部分，负责打开模态框
+        // 点击按钮时执行的动作
         action: (toolbar) => {
-          // "raffle-editor" 是根据我们的组件文件名自动生成的名字
-          // 我们将 composer 的 model (也就是 topic) 传递给模态框
           api.container.lookup("service:modal").show("raffle-editor", {
             model: { topic: toolbar.topic },
           });
         },
         
-        // 这个按钮只在编辑主楼时显示
+        // 决定按钮是否显示的条件
         condition: (composer) => {
           return composer.creatingTopic || (composer.editingTopic && composer.post.post_number === 1);
         },
