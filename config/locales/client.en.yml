@@ -30,3 +30,90 @@ en:
         keyword_rule: "Keyword"
         no_winners: "Unfortunately, there were no winners in this raffle."
         view_winning_post: "View winning post"
+        post_deleted: "post deleted"```
+
+#### **`assets/stylesheets/common/raffle.scss`**
+
+```scss
+.raffle-prize-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+
+  input {
+    flex: 1;
+  }
+
+  .prize-quantity {
+    flex: 0 0 80px;
+  }
+}
+
+.raffle-info-card {
+  background-color: var(--secondary-very-low);
+  border: 1px solid var(--primary-low);
+  border-radius: 5px;
+  margin-bottom: 1em;
+  overflow: hidden;
+
+  .raffle-card-header {
+    background-color: var(--primary-low);
+    color: var(--primary-medium);
+    padding: 10px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .raffle-card-title {
+      font-weight: bold;
+      font-size: var(--font-up-1);
+    }
+  }
+
+  .raffle-card-body {
+    padding: 15px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+
+    h4 {
+      margin-top: 0;
+      border-bottom: 1px solid var(--primary-low);
+      padding-bottom: 5px;
+    }
+
+    ul {
+      list-style-type: none;
+      padding-left: 0;
+      margin-bottom: 0;
+    }
+  }
+
+  &.is-finished {
+    border-color: var(--tertiary);
+    .raffle-card-header {
+      background-color: var(--tertiary-low);
+      color: var(--tertiary-medium);
+    }
+  }
+
+  .raffle-winners-list {
+    grid-column: 1 / -1;
+
+    li {
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .raffle-prize-name {
+      font-weight: bold;
+      min-width: 80px;
+    }
+    .user-link .avatar {
+      border-radius: 50%;
+    }
+  }
+}
