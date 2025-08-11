@@ -1,4 +1,4 @@
 plugins:
   raffle_enabled:
     default: true
-    client: false # 这个设置主要用于后端逻辑，前端不需要直接访问，设为 false 更安全
+    client: true
